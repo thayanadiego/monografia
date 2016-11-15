@@ -12,9 +12,9 @@ dir_artificial <- "/bases/artificial/"
 
 obj_mult <- c(5, 50)
 prop_ruido <- c(0, 0.1, 0.2, 0.5, 0.8)
-n_vars <- c(10, 50, 150)
-n_cluster <-  5:15
-sep_val <-  0.7
+n_vars <- c(10, 20, 40)
+n_cluster <-  5:10
+sep_val <-  seq(0.4, 0.8, by = 0.1)
 
 parametros <- CJ(obj_mult = obj_mult,
                  prop_ruido = prop_ruido,
@@ -34,9 +34,19 @@ for (i in 1:n_replicate) {
       value = integer(nrow(parametros)))
 }
 
+parametros <- parametros[order(n_cluster)]
 
 
 n <- nrow(parametros)
+
+
+if(installed.packages()["data.table", "Version"] == "1.9.7") {
+  write_file <- fwrite
+} else {
+  write_file <- write.csv
+}
+
+
 pb <- txtProgressBar(min = 0, max = n, style = 3)
 for (itr in 1:n) {
   t0 <- proc.time()
@@ -45,11 +55,12 @@ for (itr in 1:n) {
                           numNonNoisy = parametros[itr, n_vars],
                           numNoisy = parametros[itr, n_ruido],
                           numReplicate = n_replicate)
-
+  
   for (i_base in 1:n_replicate) {
     test <- paste("test", i_base, sep = "_")
     
-    base <- dados$datList[[test]] %>% as.data.frame()
+    base <- dados$datList[[test]]
+    base <- base %>% as.data.frame()
     col_ruido <- dados$noisyList[[test]]
     
     set(x = parametros, i = itr,
@@ -62,7 +73,8 @@ for (itr in 1:n) {
     
     pasta <- paste("x", parametros[itr, n_vars], "_",
                    "r", parametros[itr, n_ruido], "_",
-                   "k", parametros[itr, n_cluster], "/",
+                   "k", parametros[itr, n_cluster], "_",
+                   "s", parametros[itr, sep_val], "/",
                    sep = "")
     new_dir <- paste(wd, dir_artificial, pasta, sep = "")
     if (!dir.exists(new_dir)) dir.create(path = new_dir)
@@ -78,54 +90,11 @@ for (itr in 1:n) {
     # r: numero de variaveis de ruido
     # k: numero de clusters
     
-    fwrite(x = base, file = export_name)
+    write_file(x = base, file = export_name)
   }
   t1 <- proc.time() - t0
   parametros[itr, time := t1["elapsed"]]
+
   setTxtProgressBar(pb, itr)
 }
 close(pb)
-
-
-
-# ---- verificar a versao do data.table para fwrite!!!
-
-
-
-
-resultado <- matrix(data = NA, nrow = length(sep_val), ncol = 3)
-for (i in seq_along(sep_val)) {
-  dados <- genRandomClust(numClust = n_cluster, sepVal = sep_val[i], numNonNoisy = 15L)
-  
-  x1 <- dados$datList$test_1
-  x2 <- dados$datList$test_2
-  x3 <- dados$datList$test_3
-  
-  d1 <- dist(x1)
-  d2 <- dist(x2)
-  d3 <- dist(x3)
-  
-  
-  n <- 100L
-  sil_1 <- sil_2 <- sil_3 <- numeric(n)
-  
-  for (j in 1:n) {
-    
-    sil_1[j] <- silhouette(x = kmeans(x = x1, centers = n_cluster)$cluster,
-                           dist = d1)[, "sil_width"] %>% mean()
-    
-    sil_2[j] <- silhouette(x = kmeans(x = x2, centers = n_cluster)$cluster,
-                           dist = d2)[, "sil_width"] %>% mean()
-    
-    sil_3[j] <- silhouette(x = kmeans(x = x3, centers = n_cluster)$cluster,
-                           dist = d3)[, "sil_width"] %>% mean()
-  }
-  
-  resultado[i, ] <-c(sil_1 %>% median(), sil_2 %>% median(), sil_3 %>% median())
-  
-}
-
-
-
-row.names(resultado) <- sep_val
-
