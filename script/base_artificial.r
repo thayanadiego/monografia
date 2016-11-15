@@ -51,7 +51,7 @@ new_dir <- paste(wd, dir_artificial, sep = "")
 if (!dir.exists(new_dir)) dir.create(path = new_dir)
 
 pb <- txtProgressBar(min = 0, max = n, style = 3)
-for (itr in 1:10) {
+for (itr in 1:n) {
   t0 <- proc.time()
   dados <- genRandomClust(numClust = parametros[itr, n_cluster],
                           sepVal = parametros[itr, sep_val],
