@@ -47,8 +47,11 @@ if(installed.packages()["data.table", "Version"] == "1.9.7") {
 }
 
 
+new_dir <- paste(wd, dir_artificial, sep = "")
+if (!dir.exists(new_dir)) dir.create(path = new_dir)
+
 pb <- txtProgressBar(min = 0, max = n, style = 3)
-for (itr in 1:n) {
+for (itr in 1:10) {
   t0 <- proc.time()
   dados <- genRandomClust(numClust = parametros[itr, n_cluster],
                           sepVal = parametros[itr, sep_val],
@@ -74,7 +77,7 @@ for (itr in 1:n) {
     pasta <- paste("x", parametros[itr, n_vars], "_",
                    "r", parametros[itr, n_ruido], "_",
                    "k", parametros[itr, n_cluster], "_",
-                   "s", parametros[itr, sep_val], "/",
+                   "s", parametros[itr, sep_val]*100, "/",
                    sep = "")
     new_dir <- paste(wd, dir_artificial, pasta, sep = "")
     if (!dir.exists(new_dir)) dir.create(path = new_dir)
@@ -84,6 +87,7 @@ for (itr in 1:n) {
                          "x", parametros[itr, n_vars], "_",
                          "r", parametros[itr, n_ruido], "_",
                          "k", parametros[itr, n_cluster], "_",
+                         "s", parametros[itr, sep_val]*100, "_",
                          "g", i_base,
                          ".csv", sep = "")
     # x: numero de variaveis nao ruido
